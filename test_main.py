@@ -16,3 +16,11 @@ def test_jobsiteList_contains_strings():
     """Test that all items in jobsiteList are strings."""
     for site in jobsiteList:
         assert isinstance(site, str)
+
+
+def test_build_search_url_outputs_expected_url():
+    """Output the generated search URL for manual inspection and assert it's well formed."""
+    from main import build_search_url
+    url = build_search_url('greenhouse.io')
+    print(url)
+    assert url.startswith("https://www.google.com/search?q=site:greenhouse.io")
