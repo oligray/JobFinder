@@ -1,124 +1,185 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import tempfile
 import os
+import webbrowser
+import requests
 from bs4 import BeautifulSoup
 
-# Set up Chrome options
-chrome_options = Options()
-# chrome_options.add_argument("--headless")  # Commented out for debugging
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--window-size=1920,1080")
-chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+# Constants
+BASE_URL = 'https://cse.google.com/cse?cx=30b1b200fbb65405a'
+SEARCH_URL = BASE_URL + '&q=%22engineering%22%20AND%20(%22director%22%20OR%20%22head%22%20OR%20%22VP%22)%20AND%20(%22hiring%22%20OR%20%22apply%22%20OR%20%22open%20role%22)'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
-base_url = 'https://cse.google.com/cse?cx=30b1b200fbb65405a'
-search_url = base_url + '&q=%22engineering%22%20AND%20(%22director%22%20OR%20%22head%22%20OR%20%22VP%22)%20AND%20(%22hiring%22%20OR%20%22apply%22%20OR%20%22open%20role%22)'
 
-print("Searching for engineering leadership positions...")
-print("Launching browser to execute JavaScript...")
+def setup_chrome_options():
+    """Configure Chrome driver options for web scraping."""
+    chrome_options = Options()
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument(f"--user-agent={USER_AGENT}")
+    return chrome_options
 
-try:
-    # Try to initialize Chrome driver
-    driver = webdriver.Chrome(options=chrome_options)
-    print("Chrome driver initialized successfully.")
 
-    # Navigate to the search URL
-    print(f"Navigating to: {search_url}")
-    driver.get(search_url)
-
-    # Wait for the page to load
-    print("Waiting for page to load...")
-    time.sleep(5)  # Give time for JavaScript to load
-
-    # Try to find search results or wait for page elements
+def search_with_selenium(search_url):
+    """
+    Execute JavaScript search using Selenium and return rendered HTML.
+    
+    Args:
+        search_url (str): URL to search
+        
+    Returns:
+        str: Rendered HTML content or None if failed
+    """
     try:
-        # Wait up to 10 seconds for some content to load
-        WebDriverWait(driver, 10).until(
-            lambda driver: driver.execute_script("return document.readyState") == "complete"
-        )
-        print("Page loaded successfully.")
-    except:
-        print("Page may not have loaded completely, but continuing...")
+        chrome_options = setup_chrome_options()
+        driver = webdriver.Chrome(options=chrome_options)
+        print("Chrome driver initialized successfully.")
 
-    # Get the fully rendered HTML
-    html_content = driver.page_source
-    print(f"Retrieved {len(html_content)} characters of HTML content.")
+        print(f"Navigating to: {search_url}")
+        driver.get(search_url)
 
-    # Parse the HTML to extract search result URLs
+        print("Waiting for page to load...")
+        time.sleep(5)
+
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda driver: driver.execute_script("return document.readyState") == "complete"
+            )
+            print("Page loaded successfully.")
+        except:
+            print("Page may not have loaded completely, but continuing...")
+
+        html_content = driver.page_source
+        print(f"Retrieved {len(html_content)} characters of HTML content.")
+        
+        driver.quit()
+        print("Browser closed.")
+        
+        return html_content
+
+    except Exception as e:
+        print(f"Selenium search failed: {e}")
+        return None
+
+
+def extract_urls_from_html(html_content, use_filter=False):
+    """
+    Parse HTML and extract search result URLs.
+    
+    Args:
+        html_content (str): HTML content to parse
+        use_filter (bool): If True, filter URLs for job-related keywords
+        
+    Returns:
+        list: Unique URLs found in the HTML
+    """
     soup = BeautifulSoup(html_content, 'html.parser')
-    search_results = []
+    search_results = set()
     
-    # Find all links in search results (typically with class 'gs-title' for Google CSE)
-    for a_tag in soup.find_all('a', class_='gs-title'):
-        url = a_tag.get('href')
-        if url and url.startswith('http'):
-            search_results.append(url)
+    if use_filter:
+        # Filter for job-related URLs
+        for a_tag in soup.find_all('a', href=True):
+            url = a_tag.get('href')
+            if url and url.startswith('http') and any(keyword in url.lower() for keyword in ['job', 'hiring', 'apply']):
+                search_results.add(url)
+    else:
+        # Get all URLs from search results
+        for a_tag in soup.find_all('a', class_='gs-title'):
+            url = a_tag.get('href')
+            if url and url.startswith('http'):
+                search_results.add(url)
     
-    print(f"Found {len(search_results)} search result URLs:")
+    return list(search_results)
+
+
+def print_search_results(search_results):
+    """Display search results to user."""
+    print(f"Found {len(search_results)} unique search result URLs:")
     for i, url in enumerate(search_results, 1):
         print(f"{i}. {url}")
 
-    # Close the browser
-    driver.quit()
-    print("Browser closed.")
 
-    print("Opening results in browser...")
-
-    # Create a temporary HTML file
+def open_results_in_browser(html_content):
+    """
+    Create temporary HTML file and open in default browser.
+    
+    Args:
+        html_content (str): HTML content to save
+    """
     with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
         temp_file.write(html_content)
         temp_file_path = temp_file.name
 
-    # Open the HTML file in the default web browser
-    import webbrowser
     webbrowser.open(f'file://{temp_file_path}')
-
     print(f"Results saved to temporary file: {temp_file_path}")
     print("You can close the browser tab when done. The temporary file will be cleaned up on next system restart.")
 
-except Exception as e:
-    print(f"An error occurred: {e}")
+
+def search_with_requests(search_url):
+    """
+    Fallback search using basic requests (doesn't execute JavaScript).
+    
+    Args:
+        search_url (str): URL to search
+        
+    Returns:
+        str: Response text or None if failed
+    """
+    print("\nFalling back to basic requests method...")
+    headers = {'User-Agent': USER_AGENT}
+    
+    try:
+        response = requests.get(search_url, headers=headers)
+        if response.status_code == 200:
+            print("Basic request successful. Note: This may show 'JavaScript not enabled' message.")
+            return response.text
+        else:
+            print(f"Even basic request failed with status: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Basic request failed: {e}")
+        return None
+
+
+def print_troubleshooting_tips():
+    """Display troubleshooting information."""
     print("\nTroubleshooting suggestions:")
     print("1. Make sure Google Chrome is installed")
     print("2. If Chrome isn't available, try installing it from: https://www.google.com/chrome/")
     print("3. Alternatively, we can modify the script to use Microsoft Edge or Firefox")
     print("4. Or we can use the Google Custom Search JSON API instead (requires API key)")
 
-    # Fallback to the original requests method
-    print("\nFalling back to basic requests method...")
-    import requests
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    response = requests.get(search_url, headers=headers)
-    if response.status_code == 200:
-        print("Basic request successful. Note: This may show 'JavaScript not enabled' message.")
-        
-        # Parse the HTML to extract search result URLs
-        soup = BeautifulSoup(response.text, 'html.parser')
-        search_results = []
-        
-        # Find all links in search results
-        for a_tag in soup.find_all('a', href=True):
-            url = a_tag.get('href')
-            if url and url.startswith('http') and ('job' in url.lower() or 'hiring' in url.lower() or 'apply' in url.lower()):
-                search_results.append(url)
-        
-        print(f"Found {len(search_results)} search result URLs from basic request:")
-        for i, url in enumerate(search_results, 1):
-            print(f"{i}. {url}")
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
-            temp_file.write(response.text)
-            temp_file_path = temp_file.name
-        import webbrowser
-        webbrowser.open(f'file://{temp_file_path}')
-        print(f"Basic results saved to: {temp_file_path}")
+
+def main():
+    """Main entry point for the job search script."""
+    print("Searching for engineering leadership positions...")
+    print("Launching browser to execute JavaScript...")
+
+    # Try primary method with Selenium
+    html_content = search_with_selenium(SEARCH_URL)
+    
+    if html_content:
+        search_results = extract_urls_from_html(html_content)
+        print_search_results(search_results)
+        print("Opening results in browser...")
+        open_results_in_browser(html_content)
     else:
-        print(f"Even basic request failed with status: {response.status_code}")
+        # Fallback to requests method
+        print_troubleshooting_tips()
+        html_content = search_with_requests(SEARCH_URL)
+        
+        if html_content:
+            search_results = extract_urls_from_html(html_content, use_filter=True)
+            print_search_results(search_results)
+            open_results_in_browser(html_content)
+
+
+if __name__ == "__main__":
+    main()
