@@ -1,13 +1,12 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import tempfile
-import os
 import webbrowser
 import requests
+import argparse
 from bs4 import BeautifulSoup
 
 # Constants
@@ -19,6 +18,7 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 def setup_chrome_options():
     """Configure Chrome driver options for web scraping."""
     chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in background without visible window
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
@@ -106,20 +106,27 @@ def print_search_results(search_results):
         print(f"{i}. {url}")
 
 
-def open_results_in_browser(html_content):
+def open_results_in_browser(html_content, debug=False):
     """
-    Create temporary HTML file and open in default browser.
+    Create temporary HTML file and open in default browser if debug is enabled.
     
     Args:
         html_content (str): HTML content to save
+        debug (bool): If True, open the file in the default browser
     """
     with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as temp_file:
         temp_file.write(html_content)
         temp_file_path = temp_file.name
 
-    webbrowser.open(f'file://{temp_file_path}')
+    if debug:
+        webbrowser.open(f'file://{temp_file_path}')
+        print("Opening results in browser...")
+    
     print(f"Results saved to temporary file: {temp_file_path}")
-    print("You can close the browser tab when done. The temporary file will be cleaned up on next system restart.")
+    if debug:
+        print("You can close the browser tab when done. The temporary file will be cleaned up on next system restart.")
+    else:
+        print("(Use --debug flag to open results in browser)")
 
 
 def search_with_requests(search_url):
@@ -159,6 +166,10 @@ def print_troubleshooting_tips():
 
 def main():
     """Main entry point for the job search script."""
+    parser = argparse.ArgumentParser(description='Search for engineering leadership job positions')
+    parser.add_argument('--debug', action='store_true', help='Open results in browser window')
+    args = parser.parse_args()
+    
     print("Searching for engineering leadership positions...")
     print("Launching browser to execute JavaScript...")
 
@@ -168,8 +179,7 @@ def main():
     if html_content:
         search_results = extract_urls_from_html(html_content)
         print_search_results(search_results)
-        print("Opening results in browser...")
-        open_results_in_browser(html_content)
+        open_results_in_browser(html_content, debug=args.debug)
     else:
         # Fallback to requests method
         print_troubleshooting_tips()
@@ -178,7 +188,7 @@ def main():
         if html_content:
             search_results = extract_urls_from_html(html_content, use_filter=True)
             print_search_results(search_results)
-            open_results_in_browser(html_content)
+            open_results_in_browser(html_content, debug=args.debug)
 
 
 if __name__ == "__main__":
