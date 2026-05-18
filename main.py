@@ -2,7 +2,7 @@ import requests
 
 jobsiteList = ['greenhouse.io','jobs.ashbyhq.com']
 
-def build_search_url(siteURL: str, keywords: str = "('engineering') AND ('manager' OR 'director') AND ('hiring' OR 'apply' OR 'open role')") -> str:
+def build_search_url(siteURL: str, keywords: str = "('head of engineering') AND ('hiring' OR 'apply' OR 'open role')") -> str:
     """Build a Google search URL for a given site and optional keywords."""
     query = f"site:{siteURL} AND {keywords}"
     return f"https://www.google.com/search?q={query.replace(' ', '+')}"

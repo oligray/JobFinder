@@ -1,0 +1,20 @@
+title:
+  require_any: []
+  positive:    ["director of engineering", "head of engineering", "vp of engineering",
+                "vp engineering", "engineering manager", "principal engineer"]
+  negative:    ["junior", "intern", "sales engineer", "solutions engineer", "marketing"]
+
+company:
+  positive:    []
+  negative:    []
+
+location:
+  positive:    []
+  negative:    []
+
+description:
+  positive:    []
+  negative:    []
+
+# Minimum saved + rejected ratings before pattern suggestions are shown
+pattern_suggestion_threshold: 10

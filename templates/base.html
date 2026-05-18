@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}JobFinder{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav>
+  <a href="{{ url_for('index') }}" class="nav-brand">JobFinder</a>
+  <div class="nav-links">
+    <a href="{{ url_for('index') }}">Queue</a>
+    <a href="{{ url_for('jobs_list') }}">All Jobs</a>
+    <a href="{{ url_for('rules_view') }}">Rules</a>
+    <a href="{{ url_for('patterns_view') }}">Patterns</a>
+    <button id="run-search-btn" class="btn-search" onclick="runSearch()">Run Search</button>
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="flash-messages">
+  {% for msg in messages %}<div class="flash">{{ msg }}</div>{% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div id="search-banner" class="search-banner hidden"></div>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<script>
+function runSearch() {
+  const btn = document.getElementById('run-search-btn');
+  const banner = document.getElementById('search-banner');
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
+  banner.textContent = 'Search running…';
+  banner.className = 'search-banner running';
+
+  fetch('/search/run', {method: 'POST'})
+    .then(r => r.json())
+    .then(() => pollStatus());
+}
+
+function pollStatus() {
+  fetch('/search/status')
+    .then(r => r.json())
+    .then(data => {
+      const btn = document.getElementById('run-search-btn');
+      const banner = document.getElementById('search-banner');
+      if (data.running) {
+        setTimeout(pollStatus, 2000);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Run Search';
+        if (data.result && !data.result.error) {
+          banner.textContent = `Done — ${data.result.new} new jobs found (${data.result.total} total). Refreshing…`;
+          banner.className = 'search-banner done';
+          setTimeout(() => location.reload(), 1500);
+        } else if (data.result && data.result.error) {
+          banner.textContent = `Search failed: ${data.result.error}`;
+          banner.className = 'search-banner error';
+        } else {
+          banner.className = 'search-banner hidden';
+        }
+      }
+    });
+}
+</script>
+</body>
+</html>

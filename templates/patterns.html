@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Patterns — JobFinder{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Pattern Suggestions</h1>
+  <p class="subtitle">Based on your saved and rejected jobs, here are terms that may improve your rules.</p>
+</div>
+
+{% if suggestions is none %}
+<div class="not-enough">
+  <p>Not enough data yet. You need at least <strong>{{ threshold }}</strong> saved and <strong>{{ threshold }}</strong> rejected jobs.</p>
+  <p>Current: <strong>{{ saved_count }}</strong> saved, <strong>{{ rejected_count }}</strong> rejected.</p>
+</div>
+{% else %}
+<div class="patterns-grid">
+  <div class="patterns-col">
+    <h2 class="label-positive">Likely Good Fits</h2>
+    <p class="col-subtitle">These terms appear more in jobs you saved.</p>
+    {% if suggestions.positive_suggestions %}
+    <table class="pattern-table">
+      <thead><tr><th>Term</th><th>Field</th><th>Score</th><th></th></tr></thead>
+      <tbody>
+      {% for s in suggestions.positive_suggestions %}
+      <tr>
+        <td><code>{{ s.term }}</code></td>
+        <td>{{ s.source }}</td>
+        <td>+{{ "%.2f"|format(s.score) }}</td>
+        <td>
+          <button class="btn-add-rule" onclick="applyPattern('{{ s.source }}','positive','{{ s.term }}', this)">
+            Add to positive
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No positive suggestions.</p>
+    {% endif %}
+  </div>
+
+  <div class="patterns-col">
+    <h2 class="label-negative">Likely Poor Fits</h2>
+    <p class="col-subtitle">These terms appear more in jobs you rejected.</p>
+    {% if suggestions.negative_suggestions %}
+    <table class="pattern-table">
+      <thead><tr><th>Term</th><th>Field</th><th>Score</th><th></th></tr></thead>
+      <tbody>
+      {% for s in suggestions.negative_suggestions %}
+      <tr>
+        <td><code>{{ s.term }}</code></td>
+        <td>{{ s.source }}</td>
+        <td>{{ "%.2f"|format(s.score) }}</td>
+        <td>
+          <button class="btn-add-rule" onclick="applyPattern('{{ s.source }}','negative','{{ s.term }}', this)">
+            Add to negative
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No negative suggestions.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+function applyPattern(field, list, term, btn) {
+  fetch('/patterns/apply', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({field, list, term})
+  }).then(r => r.json()).then(data => {
+    if (data.ok) {
+      btn.textContent = 'Added ✓';
+      btn.disabled = true;
+    }
+  });
+}
+</script>
+{% endblock %}

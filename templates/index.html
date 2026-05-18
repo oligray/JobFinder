@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Queue — JobFinder{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>New Jobs <span class="badge">{{ jobs|length }}</span></h1>
+  <div class="header-actions">
+    {% if excluded %}
+    <a href="{{ '?show_excluded=1' if not show_excluded else '?' }}" class="link-toggle">
+      {{ 'Hide' if show_excluded else 'Show' }} {{ excluded|length }} rule-excluded
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if not jobs and not (show_excluded and excluded) %}
+<p class="empty-state">No new jobs in the queue. Run a search to find some.</p>
+{% endif %}
+
+{% if jobs %}
+<table class="job-table">
+  <thead>
+    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Actions</th></tr>
+  </thead>
+  <tbody>
+  {% for job in jobs %}
+  <tr class="{{ 'recent' if job.is_recent }}">
+    <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.title or job.url }}</a></td>
+    <td>{{ job.company or '—' }}</td>
+    <td>{{ job.location or '—' }}</td>
+    <td>{{ job.posted_date or 'Unknown' }}</td>
+    <td class="actions">
+      <form method="post" action="{{ url_for('update_status', job_id=job.id) }}" style="display:inline">
+        <input type="hidden" name="status" value="saved">
+        <button type="submit" class="btn-save">Save</button>
+      </form>
+      <form method="post" action="{{ url_for('update_status', job_id=job.id) }}" style="display:inline">
+        <input type="hidden" name="status" value="rejected">
+        <button type="submit" class="btn-reject">Reject</button>
+      </form>
+      <a href="{{ job.url }}" target="_blank" class="btn-visit">Visit</a>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if show_excluded and excluded %}
+<h2 class="section-title">Rule-excluded ({{ excluded|length }})</h2>
+<table class="job-table excluded-table">
+  <thead>
+    <tr><th>URL</th><th>Reason</th></tr>
+  </thead>
+  <tbody>
+  {% for job in excluded %}
+  <tr>
+    <td><a href="{{ job.url }}" target="_blank">{{ job.url }}</a></td>
+    <td class="exclude-reason">{{ job.exclude_reason }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title or 'Job' }} — JobFinder{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ job.title or 'Job Detail' }}</h1>
+  <a href="{{ url_for('index') }}" class="back-link">← Back to queue</a>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-main">
+    <table class="detail-table">
+      <tr><th>Company</th><td>{{ job.company or '—' }}</td></tr>
+      <tr><th>Location</th><td>{{ job.location or '—' }}</td></tr>
+      <tr><th>Posted</th><td>{{ job.posted_date or 'Unknown' }}</td></tr>
+      <tr><th>First seen</th><td>{{ job.first_seen[:10] }}</td></tr>
+      <tr><th>Status</th>
+          <td><span class="status-badge status-{{ job.status }}">{{ job.status }}</span></td></tr>
+    </table>
+
+    {% if job.description %}
+    <div class="description-block">
+      <h3>Description excerpt</h3>
+      <p>{{ job.description[:500] }}{% if job.description|length > 500 %}…{% endif %}</p>
+    </div>
+    {% endif %}
+
+    <div class="visit-block">
+      <a href="{{ job.url }}" target="_blank" class="btn-primary">Visit listing ↗</a>
+    </div>
+  </div>
+
+  <div class="detail-sidebar">
+    <h3>Update Status</h3>
+    <form method="post" action="{{ url_for('update_status', job_id=job.id) }}">
+      <select name="status" class="status-select">
+        {% for s in ['new', 'saved', 'applied', 'interviewing', 'rejected'] %}
+        <option value="{{ s }}" {{ 'selected' if job.status == s }}>{{ s.title() }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-primary">Save Status</button>
+    </form>
+
+    <h3>Notes</h3>
+    <form method="post" action="{{ url_for('update_notes', job_id=job.id) }}">
+      <textarea name="notes" rows="6" class="notes-area">{{ job.notes or '' }}</textarea>
+      <button type="submit" class="btn-primary">Save Notes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

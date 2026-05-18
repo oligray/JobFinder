@@ -1,0 +1,149 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+/* Nav */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0 24px;
+  height: 48px;
+}
+.nav-brand { color: #fff; font-weight: 700; font-size: 16px; text-decoration: none; }
+.nav-links { display: flex; align-items: center; gap: 20px; }
+.nav-links a { color: #ccc; text-decoration: none; }
+.nav-links a:hover { color: #fff; }
+.btn-search {
+  background: #4a90d9; color: #fff; border: none; border-radius: 4px;
+  padding: 6px 14px; cursor: pointer; font-size: 13px;
+}
+.btn-search:hover { background: #357abd; }
+.btn-search:disabled { background: #666; cursor: default; }
+
+/* Flash */
+.flash-messages { background: #fffbea; border-bottom: 1px solid #f0d060; padding: 8px 24px; }
+.flash { color: #7a5c00; }
+
+/* Search banner */
+.search-banner { padding: 10px 24px; font-weight: 500; }
+.search-banner.hidden { display: none; }
+.search-banner.running { background: #e8f0fe; color: #1a56db; }
+.search-banner.done { background: #ecfdf5; color: #065f46; }
+.search-banner.error { background: #fef2f2; color: #991b1b; }
+
+/* Main */
+main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+/* Page header */
+.page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+.page-header h1 { font-size: 22px; font-weight: 600; }
+.subtitle { color: #666; margin-top: 4px; margin-bottom: 20px; }
+.back-link { font-size: 13px; color: #4a90d9; text-decoration: none; }
+.badge {
+  background: #4a90d9; color: #fff; border-radius: 10px;
+  padding: 2px 8px; font-size: 12px; margin-left: 8px;
+}
+.link-toggle { font-size: 13px; color: #4a90d9; text-decoration: none; }
+
+/* Job table */
+.job-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.job-table th { background: #f0f0f0; padding: 10px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; }
+.job-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+.job-table tr:last-child td { border-bottom: none; }
+.job-table tr.recent td { background: #fffbea; }
+.job-table a { color: #1a1a1a; text-decoration: none; }
+.job-table a:hover { text-decoration: underline; color: #4a90d9; }
+.excluded-table { opacity: 0.7; margin-top: 8px; }
+.exclude-reason { color: #991b1b; font-size: 12px; }
+
+/* Action buttons */
+.actions { white-space: nowrap; }
+.btn-save, .btn-reject, .btn-visit {
+  padding: 4px 10px; border-radius: 4px; border: 1px solid; cursor: pointer;
+  font-size: 12px; text-decoration: none; margin-right: 4px;
+}
+.btn-save { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
+.btn-save:hover { background: #d1fae5; }
+.btn-reject { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+.btn-reject:hover { background: #fee2e2; }
+.btn-visit { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; display: inline-block; }
+.btn-visit:hover { background: #dbeafe; }
+.btn-primary {
+  background: #4a90d9; color: #fff; border: none; border-radius: 4px;
+  padding: 8px 16px; cursor: pointer; font-size: 13px; display: inline-block;
+  text-decoration: none;
+}
+.btn-primary:hover { background: #357abd; }
+
+/* Status badges */
+.status-badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.status-new         { background: #e8f0fe; color: #1a56db; }
+.status-saved       { background: #ecfdf5; color: #065f46; }
+.status-applied     { background: #fef9c3; color: #92400e; }
+.status-interviewing{ background: #faf5ff; color: #6b21a8; }
+.status-rejected    { background: #fef2f2; color: #991b1b; }
+
+/* Status tabs */
+.status-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab { padding: 6px 14px; border-radius: 4px; text-decoration: none; color: #555; background: #e5e7eb; font-size: 13px; }
+.tab.active, .tab:hover { background: #4a90d9; color: #fff; }
+
+/* Empty state */
+.empty-state { color: #888; padding: 40px 0; text-align: center; }
+
+/* Detail page */
+.detail-grid { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+.detail-table { border-collapse: collapse; width: 100%; }
+.detail-table th { width: 120px; text-align: left; padding: 8px 12px; color: #666; font-weight: 500; vertical-align: top; }
+.detail-table td { padding: 8px 12px; }
+.description-block { margin-top: 20px; background: #fff; border-radius: 6px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.description-block h3 { margin-bottom: 8px; font-size: 14px; color: #555; }
+.visit-block { margin-top: 16px; }
+.detail-sidebar { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); height: fit-content; }
+.detail-sidebar h3 { font-size: 14px; font-weight: 600; margin-bottom: 10px; margin-top: 16px; }
+.detail-sidebar h3:first-child { margin-top: 0; }
+.status-select { width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; font-size: 13px; }
+.notes-area { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-size: 13px; margin-bottom: 8px; font-family: inherit; }
+
+/* Rules page */
+.rules-section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.rules-section h2 { font-size: 16px; margin-bottom: 14px; text-transform: capitalize; }
+.rule-group { margin-bottom: 14px; }
+.rule-group label { display: block; font-size: 12px; color: #666; margin-bottom: 6px; font-weight: 500; }
+.label-positive { color: #065f46 !important; }
+.label-negative { color: #991b1b !important; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; margin-bottom: 6px; }
+.tag { background: #e5e7eb; border-radius: 12px; padding: 3px 10px; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.tag-positive { background: #d1fae5; color: #065f46; }
+.tag-negative { background: #fee2e2; color: #991b1b; }
+.tag-remove { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: inherit; padding: 0; }
+.tag-add { display: flex; gap: 6px; }
+.tag-add input { flex: 1; padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+.tag-add button { padding: 5px 12px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.tag-add button:hover { background: #d1d5db; }
+.rules-actions { margin-top: 8px; display: flex; align-items: center; gap: 12px; }
+#save-status { color: #065f46; font-size: 13px; }
+.section-title { margin: 24px 0 12px; font-size: 16px; color: #555; }
+
+/* Patterns page */
+.patterns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.patterns-col { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.patterns-col h2 { font-size: 16px; margin-bottom: 4px; }
+.col-subtitle { font-size: 12px; color: #666; margin-bottom: 14px; }
+.pattern-table { width: 100%; border-collapse: collapse; }
+.pattern-table th { font-size: 11px; text-transform: uppercase; color: #888; padding: 6px 8px; border-bottom: 1px solid #eee; text-align: left; }
+.pattern-table td { padding: 8px; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+.pattern-table code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+.btn-add-rule { background: #f0f4ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 11px; }
+.btn-add-rule:hover { background: #dbeafe; }
+.btn-add-rule:disabled { background: #e5e7eb; color: #9ca3af; border-color: #e5e7eb; cursor: default; }
+.not-enough { background: #fff; border-radius: 8px; padding: 40px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.not-enough p { color: #555; line-height: 1.8; }

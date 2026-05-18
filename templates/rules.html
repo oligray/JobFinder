@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Rules — JobFinder{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Filter Rules</h1>
+  <p class="subtitle">Rules-excluded jobs are re-evaluated on every search run. Only manual "Reject" is permanent.</p>
+</div>
+
+<div id="rules-editor">
+  {% for field in ['title', 'company', 'location', 'description'] %}
+  <section class="rules-section">
+    <h2>{{ field.title() }}</h2>
+    {% if field == 'title' %}
+    <div class="rule-group">
+      <label>Require any (job must match at least one — leave empty to skip)</label>
+      <div class="tag-list" id="{{ field }}-require_any">
+        {% for term in rules[field].require_any %}
+        <span class="tag">{{ term }} <button class="tag-remove" onclick="removeTag('{{ field }}','require_any','{{ term }}')">×</button></span>
+        {% endfor %}
+      </div>
+      <div class="tag-add">
+        <input type="text" id="{{ field }}-require_any-input" placeholder="Add term…">
+        <button onclick="addTag('{{ field }}','require_any')">Add</button>
+      </div>
+    </div>
+    {% endif %}
+    <div class="rule-group">
+      <label class="label-positive">Positive keywords (for reference only, does not affect filtering)</label>
+      <div class="tag-list" id="{{ field }}-positive">
+        {% for term in rules[field].positive %}
+        <span class="tag tag-positive">{{ term }} <button class="tag-remove" onclick="removeTag('{{ field }}','positive','{{ term }}')">×</button></span>
+        {% endfor %}
+      </div>
+      <div class="tag-add">
+        <input type="text" id="{{ field }}-positive-input" placeholder="Add term…">
+        <button onclick="addTag('{{ field }}','positive')">Add</button>
+      </div>
+    </div>
+    <div class="rule-group">
+      <label class="label-negative">Negative keywords (any match excludes the job)</label>
+      <div class="tag-list" id="{{ field }}-negative">
+        {% for term in rules[field].negative %}
+        <span class="tag tag-negative">{{ term }} <button class="tag-remove" onclick="removeTag('{{ field }}','negative','{{ term }}')">×</button></span>
+        {% endfor %}
+      </div>
+      <div class="tag-add">
+        <input type="text" id="{{ field }}-negative-input" placeholder="Add term…">
+        <button onclick="addTag('{{ field }}','negative')">Add</button>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  <div class="rules-actions">
+    <button class="btn-primary" onclick="saveRules()">Save Rules</button>
+    <span id="save-status"></span>
+  </div>
+</div>
+
+<script>
+const rules = {{ rules | tojson }};
+
+function addTag(field, list) {
+  const input = document.getElementById(`${field}-${list}-input`);
+  const term = input.value.trim().toLowerCase();
+  if (!term) return;
+  if (!rules[field][list]) rules[field][list] = [];
+  if (!rules[field][list].includes(term)) {
+    rules[field][list].push(term);
+    renderTag(field, list, term);
+  }
+  input.value = '';
+}
+
+function removeTag(field, list, term) {
+  rules[field][list] = rules[field][list].filter(t => t !== term);
+  const container = document.getElementById(`${field}-${list}`);
+  container.innerHTML = '';
+  (rules[field][list] || []).forEach(t => renderTag(field, list, t));
+}
+
+function renderTag(field, list, term) {
+  const container = document.getElementById(`${field}-${list}`);
+  const span = document.createElement('span');
+  span.className = 'tag' + (list === 'positive' ? ' tag-positive' : list === 'negative' ? ' tag-negative' : '');
+  span.innerHTML = `${term} <button class="tag-remove" onclick="removeTag('${field}','${list}','${term}')">×</button>`;
+  container.appendChild(span);
+}
+
+function saveRules() {
+  fetch('/rules', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(rules)
+  }).then(r => r.json()).then(data => {
+    document.getElementById('save-status').textContent = data.ok ? 'Saved!' : 'Error saving.';
+    setTimeout(() => document.getElementById('save-status').textContent = '', 2000);
+  });
+}
+</script>
+{% endblock %}

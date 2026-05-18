@@ -24,3 +24,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# JobFinder WAL sidecar files (transient, only exist during writes)
+jobs.db-shm
+jobs.db-wal
