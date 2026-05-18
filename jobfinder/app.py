@@ -152,8 +152,11 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
                 import logging
                 logger = logging.getLogger(__name__)
 
-                urls, driver = run_search()
                 rules = get_rules()
+                urls, driver = run_search(
+                    domains=rules.get("job_boards"),
+                    pages_per_domain=rules.get("search_pages_per_board", 3),
+                )
                 conn = get_conn()
                 new_count = 0
 

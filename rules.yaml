@@ -18,3 +18,16 @@ description:
 
 # Minimum saved + rejected ratings before pattern suggestions are shown
 pattern_suggestion_threshold: 10
+
+# Job board domains to search. Each domain is queried separately so results
+# are precise job listings rather than aggregator pages.
+# Add or remove domains freely — changes take effect on the next search run.
+job_boards:
+  - greenhouse.io
+  - jobs.ashbyhq.com
+  - jobs.lever.co
+  - jobs.workable.com
+
+# How many pages (of 10 results each) to fetch per domain.
+# 3 = up to 30 results per board. Pagination stops early if a page returns nothing.
+search_pages_per_board: 3

@@ -100,7 +100,60 @@ def test_parse_relative_no_match():
     assert _parse_relative_date("just now") is None
 
 
-def test_regex_fallback_finds_iso_date():
+def test_greenhouse_published_at_in_script():
+    html = """<html><head>
+    <script>var data = {"job":{"id":123,"published_at":"2026-05-07T10:30:26-04:00","title":"Head of Eng"}};</script>
+    </head><body></body></html>"""
+    assert _extract_date_from_html(html, "https://job-boards.greenhouse.io/gitlab/jobs/123") == "2026-05-07"
+
+
+def test_script_json_posted_date_field():
+    html = """<html><head>
+    <script type="application/json">{"postedDate":"2026-04-22","title":"Director of Engineering"}</script>
+    </head><body></body></html>"""
+    assert _extract_date_from_html(html, "https://example.com") == "2026-04-22"
+
+
+def test_posted_context_scan_finds_date():
     html = "<html><body><p>Job was posted on 2026-05-15 and is still open.</p></body></html>"
     result = _extract_date_from_html(html, "https://example.com")
     assert result == "2026-05-15"
+
+
+def test_expiry_only_returns_none():
+    html = "<html><body><div>Expires 04/30/2026</div></body></html>"
+    assert _extract_date_from_html(html, "https://job-boards.greenhouse.io/gitlab/jobs/123") is None
+
+
+def test_expiry_date_does_not_override_post_date():
+    html = """<html><head>
+    <script type="application/ld+json">{"@type":"JobPosting","datePosted":"2026-03-01","validThrough":"2026-04-30"}</script>
+    </head><body><div>Expires 04/30/2026</div></body></html>"""
+    assert _extract_date_from_html(html, "https://example.com") == "2026-03-01"
+
+
+def test_json_ld_graph_wrapper():
+    html = """<html><head>
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage"},{"@type":"JobPosting","datePosted":"2026-04-10"}]}</script>
+    </head><body></body></html>"""
+    assert _extract_date_from_html(html, "https://example.com") == "2026-04-10"
+
+
+def test_json_ld_jobposting_not_first_in_list():
+    html = """<html><head>
+    <script type="application/ld+json">[{"@type":"Organization","name":"Acme"},{"@type":"JobPosting","datePosted":"2026-05-01"}]</script>
+    </head><body></body></html>"""
+    assert _extract_date_from_html(html, "https://example.com") == "2026-05-01"
+
+
+def test_time_element_with_expiry_context_is_skipped():
+    html = """<html><body>
+    <p>Application deadline: <time datetime="2026-06-01">June 1, 2026</time></p>
+    </body></html>"""
+    assert _extract_date_from_html(html, "https://example.com") is None
+
+
+def test_regex_skips_closing_date_finds_post_date():
+    html = "<html><body><p>Posted: 2026-03-10. Closing date: 2026-06-30.</p></body></html>"
+    result = _extract_date_from_html(html, "https://example.com")
+    assert result == "2026-03-10"

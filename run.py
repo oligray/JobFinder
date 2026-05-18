@@ -12,7 +12,11 @@ def run_search_command(db_path: str, rules_path: str) -> dict:
     from jobfinder.rules import load_rules, apply_rules
 
     print("Running search…")
-    urls, driver = run_search()
+    rules = load_rules(rules_path)
+    urls, driver = run_search(
+        domains=rules.get("job_boards"),
+        pages_per_domain=rules.get("search_pages_per_board", 3),
+    )
     print(f"Found {len(urls)} URLs from search.")
 
     rules = load_rules(rules_path)
