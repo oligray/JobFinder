@@ -11,8 +11,9 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://cse.google.com/cse?cx=30b1b200fbb65405a"
+# These are hard coded search terms...
 KEYWORDS = (
-    '"engineering" AND ("director" OR "head" OR "VP") '
+    '"engineering" AND ("director" OR "head" OR "VP" OR "manager" OR "CTPO") '
     'AND ("hiring" OR "apply" OR "open role")'
 )
 USER_AGENT = (
@@ -91,6 +92,13 @@ def extract_urls_from_html(html_content: str, domain_filter: str | None = None) 
     If domain_filter is set, only return URLs that contain that domain.
     """
     soup = BeautifulSoup(html_content, "html.parser")
+    if "Your search did not match any results." in soup.get_text():
+        domain_hint = domain_filter or "unknown"
+        logger.warning(
+            "No CSE results for domain '%s' — verify the domain is correct in rules.yaml",
+            domain_hint,
+        )
+        return []
     results: set[str] = set()
     for a in soup.find_all("a", class_="gs-title"):
         url = a.get("href")
