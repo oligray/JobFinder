@@ -92,7 +92,7 @@ def update_job_notes(conn: sqlite3.Connection, job_id: int, notes: str) -> None:
 
 def get_jobs_for_pattern_analysis(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT id, title, company, status FROM jobs WHERE status IN ('saved', 'rejected')"
+        "SELECT id, title, company, status FROM jobs WHERE status IN ('saved', 'rejected', 'applied')"
     ).fetchall()
 
 
