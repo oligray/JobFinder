@@ -2,7 +2,7 @@
 {% block title %}Queue — JobFinder{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>New Jobs <span class="badge">{{ jobs|length }}</span></h1>
+  <h1>New Jobs<span class="badge">{{ jobs|length }}</span></h1>
   <div class="header-actions">
     {% if excluded %}
     <a href="{{ '?show_excluded=1' if not show_excluded else '?' }}" class="link-toggle">
@@ -17,9 +17,10 @@
 {% endif %}
 
 {% if jobs %}
+<div style="overflow-x: auto">
 <table class="job-table">
   <thead>
-    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Score</th><th>Actions</th></tr>
+    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Score</th><th>Actions</th><th>Notes</th></tr>
   </thead>
   <tbody>
   {% for job in jobs %}
@@ -45,10 +46,12 @@
       </form>
       <a href="{{ job.url }}" target="_blank" class="btn-visit">Visit</a>
     </td>
+    <td class="notes-cell">{{ job.notes or '' }}</td>
   </tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endif %}
 
 {% if show_excluded and excluded %}

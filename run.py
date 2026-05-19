@@ -119,7 +119,7 @@ def main():
         from jobfinder.app import create_app
         app = create_app(db_path=args.db, rules_path=args.rules)
         print(f"Starting dashboard at http://{args.host}:{args.port}")
-        app.run(host=args.host, port=args.port, debug=False)
+        app.run(host=args.host, port=args.port, debug=True)
 
     else:
         parser.print_help()
