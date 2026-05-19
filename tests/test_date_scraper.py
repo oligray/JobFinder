@@ -1,6 +1,8 @@
 from datetime import date, timedelta
+from unittest.mock import patch, MagicMock
 from jobfinder.date_scraper import (
-    _extract_date_from_html, _parse_relative_date, _normalize_date
+    _extract_date_from_html, _parse_relative_date, _normalize_date,
+    scrape_job_page,
 )
 
 
@@ -157,3 +159,80 @@ def test_regex_skips_closing_date_finds_post_date():
     html = "<html><body><p>Posted: 2026-03-10. Closing date: 2026-06-30.</p></body></html>"
     result = _extract_date_from_html(html, "https://example.com")
     assert result == "2026-03-10"
+
+
+# ---------------------------------------------------------------------------
+# scrape_job_page metadata extraction tests
+# ---------------------------------------------------------------------------
+
+def _make_html(body: str) -> str:
+    return f"<html><head>{body}</head><body></body></html>"
+
+
+def _mock_fetch(html: str):
+    return patch("jobfinder.date_scraper._fetch_html", return_value=html)
+
+
+def test_scrape_job_page_json_ld_full():
+    html = """<html><head>
+    <script type="application/ld+json">{
+      "@type": "JobPosting",
+      "title": "Head of Engineering",
+      "datePosted": "2026-05-01",
+      "hiringOrganization": {"name": "Acme Corp"},
+      "jobLocation": {"address": {"addressLocality": "New York", "addressRegion": "NY"}},
+      "description": "Lead the engineering team."
+    }</script>
+    </head><body></body></html>"""
+    with _mock_fetch(html):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta["title"] == "Head of Engineering"
+    assert meta["company"] == "Acme Corp"
+    assert meta["location"] == "New York, NY"
+    assert meta["posted_date"] == "2026-05-01"
+    assert "Lead" in meta["description"]
+
+
+def test_scrape_job_page_og_title_fallback():
+    html = """<html><head>
+    <meta property="og:title" content="VP Engineering | Acme">
+    <meta property="og:site_name" content="Acme">
+    </head><body></body></html>"""
+    with _mock_fetch(html):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta["title"] == "VP Engineering"
+    assert meta["company"] == "Acme"
+
+
+def test_scrape_job_page_returns_empty_meta_on_fetch_failure():
+    with patch("jobfinder.date_scraper._fetch_html", return_value=None):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta == {"title": None, "company": None, "location": None,
+                    "description": None, "posted_date": None}
+
+
+def test_scrape_job_page_og_description_fallback():
+    html = """<html><head>
+    <meta property="og:description" content="A great job opportunity for engineers.">
+    </head><body></body></html>"""
+    with _mock_fetch(html):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta["description"] == "A great job opportunity for engineers."
+
+
+def test_scrape_job_page_title_strip_dash_suffix():
+    html = """<html><head>
+    <meta property="og:title" content="Director of Engineering - Big Corp">
+    </head><body></body></html>"""
+    with _mock_fetch(html):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta["title"] == "Director of Engineering"
+
+
+def test_scrape_job_page_location_from_meta():
+    html = """<html><head>
+    <meta name="job-location" content="San Francisco, CA">
+    </head><body></body></html>"""
+    with _mock_fetch(html):
+        meta = scrape_job_page("https://example.com/job")
+    assert meta["location"] == "San Francisco, CA"

@@ -19,7 +19,7 @@
 {% if jobs %}
 <table class="job-table">
   <thead>
-    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Actions</th></tr>
+    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Score</th><th>Actions</th></tr>
   </thead>
   <tbody>
   {% for job in jobs %}
@@ -28,6 +28,12 @@
     <td>{{ job.company or '—' }}</td>
     <td>{{ job.location or '—' }}</td>
     <td>{{ job.posted_date or 'Unknown' }}</td>
+    <td>
+      {% set s = job.score | default(0) %}
+      {% set badge_class = 'score-green' if s >= 8 else ('score-yellow' if s >= 4 else 'score-grey') %}
+      <span class="score-badge {{ badge_class }}"
+            title="{{ job.score_reasons | join('\n') if job.score_reasons else 'No signals matched' }}">{{ s }}</span>
+    </td>
     <td class="actions">
       <form method="post" action="{{ url_for('update_status', job_id=job.id) }}" style="display:inline">
         <input type="hidden" name="status" value="saved">

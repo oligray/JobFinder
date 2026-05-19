@@ -67,6 +67,49 @@
 </div>
 {% endif %}
 
+{# Scoring validation section #}
+<div class="validation-section">
+  <h2>Scoring Rule Validation</h2>
+  <p class="col-subtitle">How well each scoring keyword predicts good fits (applied/saved) vs. rejections.</p>
+
+  {% if applied_saved_count < 5 %}
+  <div class="not-enough" style="margin-top:16px">
+    <p>Need at least <strong>5</strong> applied or saved jobs to show signal data. Currently: <strong>{{ applied_saved_count }}</strong>.</p>
+  </div>
+  {% elif scoring_validation %}
+  <table class="pattern-table" style="margin-top:12px">
+    <thead>
+      <tr>
+        <th>Field</th><th>Keyword</th><th>Points</th>
+        <th>Applied/Saved matches</th><th>Rejected matches</th><th>Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in scoring_validation %}
+    <tr>
+      <td>{{ row.field }}</td>
+      <td><code>{{ row.keyword }}</code></td>
+      <td>{{ row.points }}</td>
+      <td>{{ row.applied_matches }}</td>
+      <td>{{ row.rejected_matches }}</td>
+      <td>
+        {% if row.signal_strength > 0.1 %}
+          <span class="signal-positive">+{{ row.signal_strength }}</span>
+        {% elif row.signal_strength < -0.1 %}
+          <span class="signal-negative">{{ row.signal_strength }}</span>
+        {% else %}
+          <span class="signal-neutral">{{ row.signal_strength }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state" style="margin-top:16px">No scoring keywords matched any jobs yet.</p>
+  {% endif %}
+</div>
+
 <script>
 function applyPattern(field, list, term, btn) {
   fetch('/patterns/apply', {

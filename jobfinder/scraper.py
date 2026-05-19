@@ -35,9 +35,16 @@ def setup_chrome_options() -> Options:
     return chrome_options
 
 
-def _build_domain_url(domain: str, page: int = 0) -> str:
+def _build_domain_url(
+    domain: str,
+    page: int = 0,
+    location_terms: list[str] | None = None,
+) -> str:
     """Build a CSE URL targeting a specific job board domain."""
     query = f"site:{domain} AND {KEYWORDS}"
+    if location_terms:
+        loc_clause = " OR ".join(f'"{t}"' for t in location_terms)
+        query += f" AND ({loc_clause})"
     start = page * 10 + 1
     return f"{BASE_URL}&q={quote(query)}&start={start}"
 
@@ -96,6 +103,7 @@ def extract_urls_from_html(html_content: str, domain_filter: str | None = None) 
 def run_search(
     domains: list[str] | None = None,
     pages_per_domain: int = 3,
+    location_terms: list[str] | None = None,
 ) -> tuple[list[str], webdriver.Chrome | None]:
     """
     Primary entry point.
@@ -115,7 +123,7 @@ def run_search(
         for domain in search_domains:
             logger.info("Searching domain: %s", domain)
             for page in range(pages_per_domain):
-                url = _build_domain_url(domain, page)
+                url = _build_domain_url(domain, page, location_terms)
                 html = _fetch_with_driver(driver, url) if driver else search_with_requests(url)
                 if not html:
                     break

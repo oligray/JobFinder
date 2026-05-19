@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 def run_search_command(db_path: str, rules_path: str) -> dict:
     from jobfinder.scraper import run_search
-    from jobfinder.date_scraper import scrape_post_date
+    from jobfinder.date_scraper import scrape_job_page
     from jobfinder.database import get_connection, upsert_job, record_search_run
     from jobfinder.rules import load_rules, apply_rules
 
@@ -16,27 +16,26 @@ def run_search_command(db_path: str, rules_path: str) -> dict:
     urls, driver = run_search(
         domains=rules.get("job_boards"),
         pages_per_domain=rules.get("search_pages_per_board", 3),
+        location_terms=rules.get("search_location_terms"),
     )
     print(f"Found {len(urls)} URLs from search.")
 
-    rules = load_rules(rules_path)
     conn = get_connection(db_path)
     new_count = 0
     skipped_rules = 0
 
     for url in urls:
-        posted_date = scrape_post_date(url, driver)
-        job_meta = {"title": None, "company": None, "location": None, "description": None}
-        ok, reason = apply_rules({**job_meta, "url": url}, rules)
+        meta = scrape_job_page(url, driver)
+        ok, reason = apply_rules({**meta, "url": url}, rules)
         if not ok:
             logging.info("Skipped (rules): %s — %s", url, reason)
             skipped_rules += 1
             continue
         _, was_new = upsert_job(
             conn, url,
-            job_meta["title"], job_meta["company"],
-            job_meta["location"], job_meta["description"],
-            posted_date
+            meta["title"], meta["company"],
+            meta["location"], meta["description"],
+            meta["posted_date"]
         )
         if was_new:
             new_count += 1

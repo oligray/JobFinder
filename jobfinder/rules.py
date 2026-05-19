@@ -9,6 +9,8 @@ _DEFAULT_RULES: dict = {
     "pattern_suggestion_threshold": 10,
     "job_boards": [],
     "search_pages_per_board": 3,
+    "search_location_terms": [],
+    "scoring": {},
 }
 
 
@@ -71,4 +73,9 @@ def _merge_defaults(data: dict[str, Any]) -> dict[str, Any]:
         "search_pages_per_board",
         _DEFAULT_RULES["search_pages_per_board"]
     )
+    result["search_location_terms"] = data.get(
+        "search_location_terms",
+        _DEFAULT_RULES["search_location_terms"]
+    )
+    result["scoring"] = data.get("scoring", _DEFAULT_RULES["scoring"])
     return result

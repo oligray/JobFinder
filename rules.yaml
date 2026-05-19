@@ -31,3 +31,46 @@ job_boards:
 # How many pages (of 10 results each) to fetch per domain.
 # 3 = up to 30 results per board. Pagination stops early if a page returns nothing.
 search_pages_per_board: 3
+
+# Location terms appended to every per-domain CSE query as:
+# AND ("remote" OR "new york" OR "nyc")
+# Hybrid is omitted — hybrid roles require office presence, so "new york" covers them.
+search_location_terms:
+  - remote
+  - "new york"
+  - nyc
+
+# Keyword → points scoring. Fields: title, location, description.
+# Scores are summed; highest-scoring jobs float to the top of the queue.
+scoring:
+  absence_penalties:
+    - fields: [description]
+      keywords: ["$240", "$250", "$260", "$270", "$280", "$300", salary, compensation]
+      penalty: -3
+  title:
+    ctpo: 5
+    cto: 4
+    "vp of engineering": 3
+    "head of engineering": 3
+    "director of engineering": 2
+  location:
+    "fully remote": 4
+    remote: 3
+    "new york": 2
+    nyc: 2
+  description:
+    "$240": 3
+    "$250": 3
+    "$260": 3
+    "$270": 3
+    "$280": 3
+    "$300": 3
+    "direct reports": 2
+    "reports to cto": 2
+    "manage managers": 2
+    hybrid: 1
+    "series a": 1
+    "series b": 1
+    startup: 1
+    "small team": 1
+    "early stage": 1

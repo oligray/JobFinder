@@ -9,6 +9,7 @@ from .database import (
 )
 from .rules import load_rules, save_rules, apply_rules
 from .patterns import analyze_patterns
+from .scoring import score_job, validate_scoring
 
 _search_state: dict = {"running": False, "last_result": None}
 
@@ -34,15 +35,19 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
 
         passing, excluded = [], []
         today = date.today().isoformat()
+        scoring_config = rules.get("scoring", {})
         for job in new_jobs:
             ok, reason = apply_rules(dict(job), rules)
             job_dict = dict(job)
             job_dict["is_recent"] = bool(job["posted_date"] and job["posted_date"] >= today[:7])
             if ok:
+                job_dict["score"], job_dict["score_reasons"] = score_job(job_dict, scoring_config)
                 passing.append(job_dict)
             else:
                 job_dict["exclude_reason"] = reason
                 excluded.append(job_dict)
+
+        passing.sort(key=lambda j: j["score"], reverse=True)
 
         return render_template(
             "index.html",
@@ -112,12 +117,23 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
         has_enough = saved_count >= threshold and rejected_count >= threshold
 
         suggestions = analyze_patterns(jobs, rules) if has_enough else None
+
+        scoring_config = rules.get("scoring", {})
+        applied_saved_count = sum(1 for j in jobs if j["status"] in ("applied", "saved"))
+        scoring_validation = (
+            validate_scoring(jobs, scoring_config)
+            if applied_saved_count >= 5
+            else None
+        )
+
         return render_template(
             "patterns.html",
             suggestions=suggestions,
             saved_count=saved_count,
             rejected_count=rejected_count,
             threshold=threshold,
+            scoring_validation=scoring_validation,
+            applied_saved_count=applied_saved_count,
         )
 
     @app.route("/patterns/apply", methods=["POST"])
@@ -148,7 +164,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
         def _run():
             try:
                 from .scraper import run_search
-                from .date_scraper import scrape_post_date
+                from .date_scraper import scrape_job_page
                 import logging
                 logger = logging.getLogger(__name__)
 
@@ -156,22 +172,21 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
                 urls, driver = run_search(
                     domains=rules.get("job_boards"),
                     pages_per_domain=rules.get("search_pages_per_board", 3),
+                    location_terms=rules.get("search_location_terms"),
                 )
                 conn = get_conn()
                 new_count = 0
 
                 for url in urls:
-                    posted_date = scrape_post_date(url, driver)
-                    job_meta = {"title": None, "company": None,
-                                "location": None, "description": None}
-                    ok, _ = apply_rules({**job_meta, "url": url}, rules)
+                    meta = scrape_job_page(url, driver)
+                    ok, _ = apply_rules({**meta, "url": url}, rules)
                     if not ok:
                         continue
                     _, was_new = upsert_job(
                         conn, url,
-                        job_meta["title"], job_meta["company"],
-                        job_meta["location"], job_meta["description"],
-                        posted_date
+                        meta["title"], meta["company"],
+                        meta["location"], meta["description"],
+                        meta["posted_date"]
                     )
                     if was_new:
                         new_count += 1
