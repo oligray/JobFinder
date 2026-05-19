@@ -2,7 +2,7 @@ title:
   require_any: []
   positive:    ["director of engineering", "head of engineering", "vp of engineering",
                 "vp engineering", "engineering manager", "principal engineer"]
-  negative:    ["junior", "intern", "sales engineer", "solutions engineer", "marketing"]
+  negative:    ["junior", "intern"]
 
 company:
   positive:    []
@@ -14,7 +14,7 @@ location:
 
 description:
   positive:    []
-  negative:    []
+  negative:    ["property management"]
 
 # Minimum saved + rejected ratings before pattern suggestions are shown
 pattern_suggestion_threshold: 10
@@ -58,6 +58,7 @@ scoring:
   title:
     ctpo: 5
     cto: 4
+    "Chief Product & Technology Officer": 4
     "vp of engineering": 3
     "head of engineering": 3
     "director of engineering": 2
