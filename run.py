@@ -25,8 +25,15 @@ def run_search_command(db_path: str, rules_path: str) -> dict:
     new_count = 0
     skipped_rules = 0
 
+    _NOT_FOUND_TITLES = {"not found", "page not found", "404 not found", "404", "404 error"}
+
     for url in urls:
         meta = scrape_job_page(url, driver)
+        title_lower = (meta.get("title") or "").strip().lower()
+        if title_lower in _NOT_FOUND_TITLES or title_lower.startswith("404"):
+            logging.warning("Skipped (404/not found): %s", url)
+            skipped_rules += 1
+            continue
         ok, reason = apply_rules({**meta, "url": url}, rules)
         if not ok:
             logging.info("Skipped (rules): %s — %s", url, reason)

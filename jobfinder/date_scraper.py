@@ -307,6 +307,7 @@ def _fetch_html(url: str, driver=None) -> str | None:
         resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10)
         if resp.status_code == 200:
             return resp.text
+        logger.warning("HTTP %d for %s — skipping", resp.status_code, url)
     except Exception as e:
         logger.warning("Requests fetch failed for %s: %s", url, e)
     return None
