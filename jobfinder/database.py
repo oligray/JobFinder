@@ -23,7 +23,7 @@ def init_db(db_path: str = "jobs.db") -> None:
                 posted_date  TEXT,
                 first_seen   TEXT NOT NULL,
                 status       TEXT NOT NULL DEFAULT 'new'
-                                 CHECK(status IN ('new','saved','applied','rejected','interviewing')),
+                                 CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
                 notes        TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
@@ -90,9 +90,46 @@ def update_job_notes(conn: sqlite3.Connection, job_id: int, notes: str) -> None:
     conn.commit()
 
 
+def migrate_db(db_path: str = "jobs.db") -> None:
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA journal_mode=WAL")
+    schema = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'"
+    ).fetchone()
+    if not schema or "'declined'" in schema[0]:
+        conn.close()
+        return
+    conn.executescript("""
+        PRAGMA foreign_keys=OFF;
+        CREATE TABLE jobs_new (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            url          TEXT NOT NULL UNIQUE,
+            title        TEXT,
+            company      TEXT,
+            location     TEXT,
+            description  TEXT,
+            posted_date  TEXT,
+            first_seen   TEXT NOT NULL,
+            status       TEXT NOT NULL DEFAULT 'new'
+                             CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
+            notes        TEXT
+        );
+        INSERT INTO jobs_new SELECT id, url, title, company, location, description,
+            posted_date, first_seen,
+            CASE WHEN status = 'rejected' THEN 'declined' ELSE status END,
+            notes FROM jobs;
+        DROP TABLE jobs;
+        ALTER TABLE jobs_new RENAME TO jobs;
+        CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+        CREATE INDEX IF NOT EXISTS idx_jobs_posted ON jobs(posted_date DESC);
+        PRAGMA foreign_keys=ON;
+    """)
+    conn.close()
+
+
 def get_jobs_for_pattern_analysis(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT id, title, company, status FROM jobs WHERE status IN ('saved', 'rejected', 'applied')"
+        "SELECT id, title, company, status FROM jobs WHERE status IN ('saved', 'declined', 'applied')"
     ).fetchall()
 
 

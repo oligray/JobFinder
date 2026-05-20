@@ -94,7 +94,7 @@ def test_get_jobs_for_pattern_analysis(db):
     id3, _ = upsert_job(conn, "https://a.com/3", "Junior Eng", "Gamma", None, None, None)
     conn.commit()
     update_job_status(conn, id1, "saved")
-    update_job_status(conn, id2, "rejected")
+    update_job_status(conn, id2, "declined")
     rows = get_jobs_for_pattern_analysis(conn)
     urls = {r["company"] for r in rows}
     assert "Acme" in urls

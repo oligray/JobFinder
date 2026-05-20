@@ -67,14 +67,14 @@ main { max-width: 1400px; margin: 0 auto; padding: 24px; }
 
 /* Action buttons */
 .actions { white-space: nowrap; }
-.btn-save, .btn-reject, .btn-visit {
+.btn-save, .btn-decline, .btn-visit {
   padding: 4px 10px; border-radius: 4px; border: 1px solid; cursor: pointer;
   font-size: 12px; text-decoration: none; margin-right: 4px;
 }
 .btn-save { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
 .btn-save:hover { background: #d1fae5; }
-.btn-reject { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
-.btn-reject:hover { background: #fee2e2; }
+.btn-decline { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+.btn-decline:hover { background: #fee2e2; }
 .btn-visit { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; display: inline-block; }
 .btn-visit:hover { background: #dbeafe; }
 .btn-primary {
@@ -90,7 +90,8 @@ main { max-width: 1400px; margin: 0 auto; padding: 24px; }
 .status-saved       { background: #ecfdf5; color: #065f46; }
 .status-applied     { background: #fef9c3; color: #92400e; }
 .status-interviewing{ background: #faf5ff; color: #6b21a8; }
-.status-rejected    { background: #fef2f2; color: #991b1b; }
+.status-declined    { background: #fef2f2; color: #991b1b; }
+.status-rejected    { background: #ffe4e6; color: #9f1239; }
 
 /* Status tabs */
 .status-tabs { display: flex; gap: 4px; margin-bottom: 16px; }

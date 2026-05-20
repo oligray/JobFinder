@@ -1,12 +1,12 @@
 from jobfinder.patterns import analyze_patterns, _tokenize, _term_frequencies
 
 
-def _make_jobs(saved_titles, rejected_titles):
+def _make_jobs(saved_titles, declined_titles):
     jobs = []
     for t in saved_titles:
         jobs.append({"title": t, "company": "Acme", "status": "saved"})
-    for t in rejected_titles:
-        jobs.append({"title": t, "company": "Acme", "status": "rejected"})
+    for t in declined_titles:
+        jobs.append({"title": t, "company": "Acme", "status": "declined"})
     return jobs
 
 

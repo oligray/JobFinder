@@ -41,8 +41,8 @@
         <button type="submit" class="btn-save">Save</button>
       </form>
       <form method="post" action="{{ url_for('update_status', job_id=job.id) }}" style="display:inline">
-        <input type="hidden" name="status" value="rejected">
-        <button type="submit" class="btn-reject">Reject</button>
+        <input type="hidden" name="status" value="declined">
+        <button type="submit" class="btn-decline">Decline</button>
       </form>
       <a href="{{ job.url }}" target="_blank" class="btn-visit">Visit</a>
     </td>

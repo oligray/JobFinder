@@ -4,7 +4,7 @@ from datetime import date
 from flask import Flask, redirect, render_template, request, url_for, jsonify, flash
 
 from .database import (
-    get_connection, init_db, get_job, get_jobs, update_job_status,
+    get_connection, init_db, migrate_db, get_job, get_jobs, update_job_status,
     update_job_notes, get_jobs_for_pattern_analysis, record_search_run, upsert_job
 )
 from .rules import load_rules, save_rules, apply_rules
@@ -18,6 +18,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = "jobfinder-local-dev"
 
+    migrate_db(db_path)
     init_db(db_path)
 
     def get_conn():
@@ -77,7 +78,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
     @app.route("/jobs/<int:job_id>/status", methods=["POST"])
     def update_status(job_id):
         status = request.form.get("status") or (request.get_json() or {}).get("status")
-        valid = {"new", "saved", "applied", "rejected", "interviewing"}
+        valid = {"new", "saved", "applied", "rejected", "interviewing", "declined"}
         if status not in valid:
             return jsonify({"error": "invalid status"}), 400
         conn = get_conn()
@@ -113,8 +114,8 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
         jobs = [dict(j) for j in get_jobs_for_pattern_analysis(conn)]
 
         saved_count = sum(1 for j in jobs if j["status"] == "saved")
-        rejected_count = sum(1 for j in jobs if j["status"] == "rejected")
-        has_enough = saved_count >= threshold and rejected_count >= threshold
+        declined_count = sum(1 for j in jobs if j["status"] == "declined")
+        has_enough = saved_count >= threshold and declined_count >= threshold
 
         suggestions = analyze_patterns(jobs, rules) if has_enough else None
 
@@ -130,7 +131,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
             "patterns.html",
             suggestions=suggestions,
             saved_count=saved_count,
-            rejected_count=rejected_count,
+            declined_count=declined_count,
             threshold=threshold,
             scoring_validation=scoring_validation,
             applied_saved_count=applied_saved_count,

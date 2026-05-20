@@ -9,13 +9,13 @@ STOP_WORDS = {
 
 def analyze_patterns(jobs: list[dict], existing_rules: dict, top_n: int = 10) -> dict:
     """
-    jobs: list of dicts with keys: title, company, status ('saved' | 'rejected')
+    jobs: list of dicts with keys: title, company, status ('saved' | 'declined')
     existing_rules: current rules dict (to exclude already-known terms)
     Returns {"positive_suggestions": [...], "negative_suggestions": [...]}
     or {"positive_suggestions": [], "negative_suggestions": []} if insufficient data.
     """
     positives = [j for j in jobs if j.get("status") == "saved"]
-    negatives = [j for j in jobs if j.get("status") == "rejected"]
+    negatives = [j for j in jobs if j.get("status") == "declined"]
 
     if not positives or not negatives:
         return {"positive_suggestions": [], "negative_suggestions": []}

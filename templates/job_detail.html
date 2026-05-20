@@ -33,7 +33,7 @@
     <h3>Update Status</h3>
     <form method="post" action="{{ url_for('update_status', job_id=job.id) }}">
       <select name="status" class="status-select">
-        {% for s in ['new', 'saved', 'applied', 'interviewing', 'rejected'] %}
+        {% for s in ['new', 'saved', 'applied', 'interviewing', 'declined', 'rejected'] %}
         <option value="{{ s }}" {{ 'selected' if job.status == s }}>{{ s.title() }}</option>
         {% endfor %}
       </select>

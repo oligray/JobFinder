@@ -6,7 +6,7 @@
 </div>
 
 <div class="status-tabs">
-  {% for s in ['all', 'new', 'saved', 'applied', 'interviewing', 'rejected'] %}
+  {% for s in ['all', 'new', 'saved', 'applied', 'interviewing', 'declined', 'rejected'] %}
   <a href="{{ url_for('jobs_list', status=s) }}"
      class="tab {{ 'active' if status_filter == s }}">{{ s.title() }}</a>
   {% endfor %}
