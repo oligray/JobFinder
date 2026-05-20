@@ -49,7 +49,8 @@ _POSTED_CONTEXT = re.compile(
 
 # Common CSS selectors for job description content
 _DESCRIPTION_SELECTORS = [
-    {"class": "content-intro"},           # Greenhouse
+    {"class": "job__description"},        # Greenhouse (new renderer)
+    {"class": "content-intro"},           # Greenhouse (legacy)
     {"class": "posting-description"},     # Lever
     {"class": "job-description"},
     {"id": "job-description"},
@@ -252,6 +253,15 @@ def _extract_description(soup: BeautifulSoup) -> str | None:
     tag = soup.find("meta", attrs={"name": "description"})
     if tag and tag.get("content"):
         return tag["content"]
+    return None
+
+
+def extract_description_html(soup: BeautifulSoup) -> str | None:
+    """Extract the description as inner HTML for rich display in the snapshot viewer."""
+    for attrs in _DESCRIPTION_SELECTORS:
+        tag = soup.find(attrs=attrs)
+        if tag and len(tag.get_text(" ", strip=True)) > 100:
+            return tag.decode_contents()
     return None
 
 

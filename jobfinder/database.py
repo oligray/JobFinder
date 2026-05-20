@@ -96,6 +96,11 @@ def update_job_snapshot(conn: sqlite3.Connection, job_id: int, snapshot_at: str)
     conn.commit()
 
 
+def update_job_description(conn: sqlite3.Connection, job_id: int, description: str) -> None:
+    conn.execute("UPDATE jobs SET description = ? WHERE id = ?", (description, job_id))
+    conn.commit()
+
+
 def migrate_db(db_path: str = "jobs.db") -> None:
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA journal_mode=WAL")
