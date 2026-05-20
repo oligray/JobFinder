@@ -208,7 +208,7 @@ def test_scrape_job_page_returns_empty_meta_on_fetch_failure():
     with patch("jobfinder.date_scraper._fetch_html", return_value=None):
         meta = scrape_job_page("https://example.com/job")
     assert meta == {"title": None, "company": None, "location": None,
-                    "description": None, "posted_date": None}
+                    "description": None, "posted_date": None, "page_html": None}
 
 
 def test_scrape_job_page_og_description_fallback():

@@ -1,25 +1,31 @@
+import os
 import threading
-from datetime import date
+from datetime import date, datetime, timezone
 
-from flask import Flask, redirect, render_template, request, url_for, jsonify, flash
+from flask import Flask, redirect, render_template, request, url_for, jsonify, flash, Response
 
 from .database import (
     get_connection, init_db, migrate_db, get_job, get_jobs, update_job_status,
-    update_job_notes, get_jobs_for_pattern_analysis, record_search_run, upsert_job
+    update_job_notes, update_job_snapshot, get_jobs_for_pattern_analysis,
+    record_search_run, upsert_job
 )
+from .date_scraper import fetch_html, _extract_from_json_ld, _extract_description
 from .rules import load_rules, save_rules, apply_rules
 from .patterns import analyze_patterns
 from .scoring import score_job, validate_scoring
 
 _search_state: dict = {"running": False, "last_result": None}
+_snapshot_state: dict = {"running": False, "done": 0, "total": 0, "errors": 0}
 
 
-def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flask:
+def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
+               snapshots_dir: str = "snapshots") -> Flask:
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = "jobfinder-local-dev"
 
     migrate_db(db_path)
     init_db(db_path)
+    os.makedirs(snapshots_dir, exist_ok=True)
 
     def get_conn():
         return get_connection(db_path)
@@ -183,12 +189,18 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
                     ok, _ = apply_rules({**meta, "url": url}, rules)
                     if not ok:
                         continue
-                    _, was_new = upsert_job(
+                    job_id, was_new = upsert_job(
                         conn, url,
                         meta["title"], meta["company"],
                         meta["location"], meta["description"],
                         meta["posted_date"]
                     )
+                    if meta.get("page_html"):
+                        path = os.path.join(snapshots_dir, f"{job_id}.html")
+                        with open(path, "w", encoding="utf-8") as f:
+                            f.write(meta["page_html"])
+                        update_job_snapshot(conn, job_id,
+                                            datetime.now(timezone.utc).isoformat())
                     if was_new:
                         new_count += 1
 
@@ -211,5 +223,73 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml") -> Flas
             "running": _search_state["running"],
             "result": _search_state["last_result"],
         })
+
+    @app.route("/jobs/<int:job_id>/snapshot")
+    def job_snapshot(job_id):
+        conn = get_conn()
+        job = get_job(conn, job_id)
+        if not job or not job["snapshot_at"]:
+            flash("No snapshot available.")
+            return redirect(url_for("job_detail", job_id=job_id))
+        path = os.path.join(snapshots_dir, f"{job_id}.html")
+        description = job["description"]
+        if os.path.exists(path):
+            from bs4 import BeautifulSoup
+            with open(path, encoding="utf-8") as f:
+                raw = f.read()
+            soup = BeautifulSoup(raw, "html.parser")
+            extracted = _extract_from_json_ld(soup)
+            description = extracted.get("description") or _extract_description(soup) or description
+        return render_template("snapshot_viewer.html", job=dict(job), description=description)
+
+    @app.route("/jobs/<int:job_id>/refetch", methods=["POST"])
+    def job_refetch(job_id):
+        conn = get_conn()
+        job = get_job(conn, job_id)
+        if not job:
+            flash("Job not found.")
+            return redirect(url_for("index"))
+        html = fetch_html(job["url"])
+        if not html:
+            flash("Could not fetch page — it may have been taken down.")
+            return redirect(url_for("job_detail", job_id=job_id))
+        path = os.path.join(snapshots_dir, f"{job_id}.html")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html)
+        update_job_snapshot(conn, job_id, datetime.now(timezone.utc).isoformat())
+        flash("Snapshot updated.")
+        return redirect(url_for("job_detail", job_id=job_id))
+
+    @app.route("/snapshots/fetch-all", methods=["POST"])
+    def snapshots_fetch_all():
+        if _snapshot_state["running"]:
+            return jsonify({"error": "already running"}), 409
+        _snapshot_state.update({"running": True, "done": 0, "total": 0, "errors": 0})
+
+        def _run():
+            try:
+                conn = get_conn()
+                jobs = [dict(j) for j in get_jobs(conn) if not j["snapshot_at"]]
+                _snapshot_state["total"] = len(jobs)
+                for job in jobs:
+                    html = fetch_html(job["url"])
+                    if html:
+                        path = os.path.join(snapshots_dir, f"{job['id']}.html")
+                        with open(path, "w", encoding="utf-8") as f:
+                            f.write(html)
+                        update_job_snapshot(conn, job["id"],
+                                            datetime.now(timezone.utc).isoformat())
+                    else:
+                        _snapshot_state["errors"] += 1
+                    _snapshot_state["done"] += 1
+            finally:
+                _snapshot_state["running"] = False
+
+        threading.Thread(target=_run, daemon=True).start()
+        return jsonify({"started": True})
+
+    @app.route("/snapshots/status")
+    def snapshots_status():
+        return jsonify(_snapshot_state)
 
     return app

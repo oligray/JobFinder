@@ -92,6 +92,7 @@ def scrape_job_page(url: str, driver=None) -> dict:
     if not meta.get("posted_date"):
         meta["posted_date"] = _extract_date_from_soup(soup, url)
 
+    meta["page_html"] = html
     return meta
 
 
@@ -155,10 +156,9 @@ def _extract_job_node(node) -> dict:
     if loc:
         meta["location"] = _parse_ld_location(loc)
 
-    # Description (cap size)
     desc = node.get("description")
     if isinstance(desc, str):
-        meta["description"] = desc[:5000]
+        meta["description"] = desc
 
     if meta:
         return {**_empty_meta(), **meta}
@@ -244,14 +244,14 @@ def _extract_description(soup: BeautifulSoup) -> str | None:
         if tag:
             text = tag.get_text(" ", strip=True)
             if len(text) > 100:
-                return text[:5000]
+                return text
     # og:description as last resort
     tag = soup.find("meta", property="og:description")
     if tag and tag.get("content"):
-        return tag["content"][:5000]
+        return tag["content"]
     tag = soup.find("meta", attrs={"name": "description"})
     if tag and tag.get("content"):
-        return tag["content"][:5000]
+        return tag["content"]
     return None
 
 
@@ -408,4 +408,8 @@ def _normalize_date(raw: str) -> str | None:
 
 def _empty_meta() -> dict:
     return {"title": None, "company": None, "location": None,
-            "description": None, "posted_date": None}
+            "description": None, "posted_date": None, "page_html": None}
+
+
+def fetch_html(url: str) -> str | None:
+    return _fetch_html(url)

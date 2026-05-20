@@ -24,7 +24,8 @@ def init_db(db_path: str = "jobs.db") -> None:
                 first_seen   TEXT NOT NULL,
                 status       TEXT NOT NULL DEFAULT 'new'
                                  CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
-                notes        TEXT
+                notes        TEXT,
+                snapshot_at  TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
             CREATE INDEX IF NOT EXISTS idx_jobs_posted ON jobs(posted_date DESC);
@@ -90,40 +91,84 @@ def update_job_notes(conn: sqlite3.Connection, job_id: int, notes: str) -> None:
     conn.commit()
 
 
+def update_job_snapshot(conn: sqlite3.Connection, job_id: int, snapshot_at: str) -> None:
+    conn.execute("UPDATE jobs SET snapshot_at = ? WHERE id = ?", (snapshot_at, job_id))
+    conn.commit()
+
+
 def migrate_db(db_path: str = "jobs.db") -> None:
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA journal_mode=WAL")
-    schema = conn.execute(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'"
-    ).fetchone()
-    if not schema or "'declined'" in schema[0]:
+
+    def _schema() -> str | None:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs'"
+        ).fetchone()
+        return row[0] if row else None
+
+    schema = _schema()
+    if not schema:
         conn.close()
         return
-    conn.executescript("""
-        PRAGMA foreign_keys=OFF;
-        CREATE TABLE jobs_new (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            url          TEXT NOT NULL UNIQUE,
-            title        TEXT,
-            company      TEXT,
-            location     TEXT,
-            description  TEXT,
-            posted_date  TEXT,
-            first_seen   TEXT NOT NULL,
-            status       TEXT NOT NULL DEFAULT 'new'
-                             CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
-            notes        TEXT
-        );
-        INSERT INTO jobs_new SELECT id, url, title, company, location, description,
-            posted_date, first_seen,
-            CASE WHEN status = 'rejected' THEN 'declined' ELSE status END,
-            notes FROM jobs;
-        DROP TABLE jobs;
-        ALTER TABLE jobs_new RENAME TO jobs;
-        CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
-        CREATE INDEX IF NOT EXISTS idx_jobs_posted ON jobs(posted_date DESC);
-        PRAGMA foreign_keys=ON;
-    """)
+
+    # Phase 1: rejected → declined
+    if "'declined'" not in schema:
+        conn.executescript("""
+            PRAGMA foreign_keys=OFF;
+            CREATE TABLE jobs_new (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                url          TEXT NOT NULL UNIQUE,
+                title        TEXT,
+                company      TEXT,
+                location     TEXT,
+                description  TEXT,
+                posted_date  TEXT,
+                first_seen   TEXT NOT NULL,
+                status       TEXT NOT NULL DEFAULT 'new'
+                                 CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
+                notes        TEXT
+            );
+            INSERT INTO jobs_new SELECT id, url, title, company, location, description,
+                posted_date, first_seen,
+                CASE WHEN status = 'rejected' THEN 'declined' ELSE status END,
+                notes FROM jobs;
+            DROP TABLE jobs;
+            ALTER TABLE jobs_new RENAME TO jobs;
+            CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+            CREATE INDEX IF NOT EXISTS idx_jobs_posted ON jobs(posted_date DESC);
+            PRAGMA foreign_keys=ON;
+        """)
+        schema = _schema()
+
+    # Phase 2: add snapshot_at column
+    if schema and "snapshot_at" not in schema:
+        conn.executescript("""
+            PRAGMA foreign_keys=OFF;
+            CREATE TABLE jobs_new (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                url          TEXT NOT NULL UNIQUE,
+                title        TEXT,
+                company      TEXT,
+                location     TEXT,
+                description  TEXT,
+                posted_date  TEXT,
+                first_seen   TEXT NOT NULL,
+                status       TEXT NOT NULL DEFAULT 'new'
+                                 CHECK(status IN ('new','saved','applied','rejected','interviewing','declined')),
+                notes        TEXT,
+                snapshot_at  TEXT
+            );
+            INSERT INTO jobs_new
+                SELECT id, url, title, company, location, description,
+                       posted_date, first_seen, status, notes, NULL
+                FROM jobs;
+            DROP TABLE jobs;
+            ALTER TABLE jobs_new RENAME TO jobs;
+            CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+            CREATE INDEX IF NOT EXISTS idx_jobs_posted ON jobs(posted_date DESC);
+            PRAGMA foreign_keys=ON;
+        """)
+
     conn.close()
 
 

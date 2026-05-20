@@ -5,6 +5,26 @@
   <h1>All Jobs</h1>
 </div>
 
+<div style="margin-bottom:12px;">
+  <button id="btn-fetch-snapshots" class="btn-visit" onclick="startSnapshotFetch()">Fetch missing snapshots</button>
+  <span id="snapshot-progress" style="margin-left:10px; color:#888; font-size:13px;"></span>
+</div>
+<script>
+function startSnapshotFetch() {
+  document.getElementById('btn-fetch-snapshots').disabled = true;
+  fetch('/snapshots/fetch-all', {method:'POST'})
+    .then(r => r.json()).then(() => pollSnapshotStatus());
+}
+function pollSnapshotStatus() {
+  fetch('/snapshots/status').then(r => r.json()).then(s => {
+    document.getElementById('snapshot-progress').textContent =
+      s.running ? `${s.done} / ${s.total} fetched…` : `Done — ${s.done} fetched, ${s.errors} failed.`;
+    if (s.running) setTimeout(pollSnapshotStatus, 1500);
+    else document.getElementById('btn-fetch-snapshots').disabled = false;
+  });
+}
+</script>
+
 <div class="status-tabs">
   {% for s in ['all', 'new', 'saved', 'applied', 'interviewing', 'declined', 'rejected'] %}
   <a href="{{ url_for('jobs_list', status=s) }}"

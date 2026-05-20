@@ -19,13 +19,30 @@
 
     {% if job.description %}
     <div class="description-block">
-      <h3>Description excerpt</h3>
-      <p>{{ job.description[:500] }}{% if job.description|length > 500 %}…{% endif %}</p>
+      <h3>Description</h3>
+      <div style="max-height: 400px; overflow-y: auto; line-height: 1.6;">
+        {% if job.description.lstrip().startswith('<') %}
+          {{ job.description | safe }}
+        {% else %}
+          <p style="white-space: pre-wrap;">{{ job.description }}</p>
+        {% endif %}
+      </div>
     </div>
     {% endif %}
 
-    <div class="visit-block">
+    <div class="visit-block" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center;">
       <a href="{{ job.url }}" target="_blank" class="btn-primary">Visit listing ↗</a>
+      {% if job.snapshot_at %}
+        <a href="{{ url_for('job_snapshot', job_id=job.id) }}" target="_blank" class="btn-visit">View snapshot</a>
+        <form method="post" action="{{ url_for('job_refetch', job_id=job.id) }}" style="display:inline">
+          <button type="submit" class="btn-visit">Re-fetch</button>
+        </form>
+        <small style="color:#888;">Snapshot: {{ job.snapshot_at[:10] }}</small>
+      {% else %}
+        <form method="post" action="{{ url_for('job_refetch', job_id=job.id) }}" style="display:inline">
+          <button type="submit" class="btn-visit">Fetch snapshot</button>
+        </form>
+      {% endif %}
     </div>
   </div>
 
