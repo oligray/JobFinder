@@ -30,6 +30,12 @@
   </div>
 
   <div class="detail-sidebar">
+    <h3>Notes</h3>
+    <form method="post" action="{{ url_for('update_notes', job_id=job.id) }}">
+      <textarea name="notes" rows="6" class="notes-area">{{ job.notes or '' }}</textarea>
+      <button type="submit" class="btn-primary">Save Notes</button>
+    </form>
+
     <h3>Update Status</h3>
     <form method="post" action="{{ url_for('update_status', job_id=job.id) }}">
       <select name="status" class="status-select">
@@ -38,12 +44,6 @@
         {% endfor %}
       </select>
       <button type="submit" class="btn-primary">Save Status</button>
-    </form>
-
-    <h3>Notes</h3>
-    <form method="post" action="{{ url_for('update_notes', job_id=job.id) }}">
-      <textarea name="notes" rows="6" class="notes-area">{{ job.notes or '' }}</textarea>
-      <button type="submit" class="btn-primary">Save Notes</button>
     </form>
   </div>
 </div>

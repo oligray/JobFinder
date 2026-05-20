@@ -20,7 +20,7 @@
 <div style="overflow-x: auto">
 <table class="job-table">
   <thead>
-    <tr><th>Title</th><th>Company</th><th>Location</th><th>Posted</th><th>Score</th><th>Actions</th><th>Notes</th></tr>
+    <tr><th>Title</th><th>Company</th><th>Location</th><th>First Seen</th><th>Posted</th><th>Score</th><th>Actions</th><th>Notes</th></tr>
   </thead>
   <tbody>
   {% for job in jobs %}
@@ -28,6 +28,7 @@
     <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.title or job.url }}</a></td>
     <td>{{ job.company or '—' }}</td>
     <td>{{ job.location or '—' }}</td>
+    <td>{{ job.first_seen[:10] }}</td>
     <td>{{ job.posted_date or 'Unknown' }}</td>
     <td>
       {% set s = job.score | default(0) %}
