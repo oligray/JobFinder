@@ -3,19 +3,19 @@
 {% block content %}
 <div class="page-header">
   <h1>Pattern Suggestions</h1>
-  <p class="subtitle">Based on your saved and declined jobs, here are terms that may improve your rules.</p>
+  <p class="subtitle">Based on your applied and declined jobs, here are terms that may improve your rules.</p>
 </div>
 
 {% if suggestions is none %}
 <div class="not-enough">
-  <p>Not enough data yet. You need at least <strong>{{ threshold }}</strong> saved and <strong>{{ threshold }}</strong> declined jobs.</p>
-  <p>Current: <strong>{{ saved_count }}</strong> saved, <strong>{{ declined_count }}</strong> declined.</p>
+  <p>Not enough data yet. You need at least <strong>{{ threshold }}</strong> applied and <strong>{{ threshold }}</strong> declined jobs.</p>
+  <p>Current: <strong>{{ applied_count }}</strong> applied, <strong>{{ declined_count }}</strong> declined.</p>
 </div>
 {% else %}
 <div class="patterns-grid">
   <div class="patterns-col">
     <h2 class="label-positive">Likely Good Fits</h2>
-    <p class="col-subtitle">These terms appear more in jobs you saved.</p>
+    <p class="col-subtitle">These terms appear more in jobs you applied to.</p>
     {% if suggestions.positive_suggestions %}
     <table class="pattern-table">
       <thead><tr><th>Term</th><th>Field</th><th>Score</th><th></th></tr></thead>

@@ -14,7 +14,7 @@ def analyze_patterns(jobs: list[dict], existing_rules: dict, top_n: int = 10) ->
     Returns {"positive_suggestions": [...], "negative_suggestions": [...]}
     or {"positive_suggestions": [], "negative_suggestions": []} if insufficient data.
     """
-    positives = [j for j in jobs if j.get("status") == "saved"]
+    positives = [j for j in jobs if j.get("status") == "applied"]
     negatives = [j for j in jobs if j.get("status") == "declined"]
 
     if not positives or not negatives:

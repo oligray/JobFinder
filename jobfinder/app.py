@@ -6,10 +6,10 @@ from flask import Flask, redirect, render_template, request, url_for, jsonify, f
 
 from .database import (
     get_connection, init_db, migrate_db, get_job, get_jobs, update_job_status,
-    update_job_notes, update_job_snapshot, get_jobs_for_pattern_analysis,
-    record_search_run, upsert_job
+    update_job_notes, update_job_snapshot, update_job_description,
+    get_jobs_for_pattern_analysis, record_search_run, upsert_job
 )
-from .date_scraper import fetch_html, _extract_from_json_ld, _extract_description
+from .date_scraper import fetch_html, _extract_from_json_ld, _extract_description, extract_description_html
 from .rules import load_rules, save_rules, apply_rules
 from .patterns import analyze_patterns
 from .scoring import score_job, validate_scoring
@@ -54,7 +54,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
                 job_dict["exclude_reason"] = reason
                 excluded.append(job_dict)
 
-        passing.sort(key=lambda j: j["score"], reverse=True)
+        passing.sort(key=lambda j: ((j["first_seen"] or "")[:10], j["score"]), reverse=True)
 
         return render_template(
             "index.html",
@@ -119,9 +119,9 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
         threshold = rules.get("pattern_suggestion_threshold", 10)
         jobs = [dict(j) for j in get_jobs_for_pattern_analysis(conn)]
 
-        saved_count = sum(1 for j in jobs if j["status"] == "saved")
+        applied_count = sum(1 for j in jobs if j["status"] == "applied")
         declined_count = sum(1 for j in jobs if j["status"] == "declined")
-        has_enough = saved_count >= threshold and declined_count >= threshold
+        has_enough = applied_count >= threshold and declined_count >= threshold
 
         suggestions = analyze_patterns(jobs, rules) if has_enough else None
 
@@ -136,7 +136,7 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
         return render_template(
             "patterns.html",
             suggestions=suggestions,
-            saved_count=saved_count,
+            applied_count=applied_count,
             declined_count=declined_count,
             threshold=threshold,
             scoring_validation=scoring_validation,
@@ -239,11 +239,17 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
                 raw = f.read()
             soup = BeautifulSoup(raw, "html.parser")
             extracted = _extract_from_json_ld(soup)
-            description = extracted.get("description") or _extract_description(soup) or description
+            description = (
+                extracted.get("description")
+                or extract_description_html(soup)
+                or _extract_description(soup)
+                or description
+            )
         return render_template("snapshot_viewer.html", job=dict(job), description=description)
 
     @app.route("/jobs/<int:job_id>/refetch", methods=["POST"])
     def job_refetch(job_id):
+        from bs4 import BeautifulSoup
         conn = get_conn()
         job = get_job(conn, job_id)
         if not job:
@@ -257,6 +263,13 @@ def create_app(db_path: str = "jobs.db", rules_path: str = "rules.yaml",
         with open(path, "w", encoding="utf-8") as f:
             f.write(html)
         update_job_snapshot(conn, job_id, datetime.now(timezone.utc).isoformat())
+
+        soup = BeautifulSoup(html, "html.parser")
+        extracted = _extract_from_json_ld(soup)
+        description = extracted.get("description") or _extract_description(soup)
+        if description and not job["description"]:
+            update_job_description(conn, job_id, description)
+
         flash("Snapshot updated.")
         return redirect(url_for("job_detail", job_id=job_id))
 
