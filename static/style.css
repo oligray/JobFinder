@@ -62,6 +62,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 24px; }
 .job-table a { color: #1a1a1a; text-decoration: none; }
 .job-table a:hover { text-decoration: underline; color: #4a90d9; }
 .job-table th:nth-child(1), .job-table td:nth-child(1) { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-table tr.date-separator td { background: #f5f5f5; color: #666; font-size: 12px; font-weight: 600; padding: 4px 12px; border-bottom: 1px solid #ddd; letter-spacing: 0.04em; }
 .excluded-table { opacity: 0.7; margin-top: 8px; }
 .exclude-reason { color: #991b1b; font-size: 12px; }
 

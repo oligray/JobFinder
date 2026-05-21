@@ -23,7 +23,13 @@
     <tr><th>Title</th><th>Company</th><th>Location</th><th>First Seen</th><th>Posted</th><th>Score</th><th>Actions</th><th>Notes</th></tr>
   </thead>
   <tbody>
+  {% set ns = namespace(prev_date=None) %}
   {% for job in jobs %}
+  {% set seen_date = job.first_seen[:10] %}
+  {% if seen_date != ns.prev_date %}
+  {% set ns.prev_date = seen_date %}
+  <tr class="date-separator"><td colspan="8">{{ seen_date }}</td></tr>
+  {% endif %}
   <tr class="{{ 'recent' if job.is_recent }}">
     <td><a href="{{ url_for('job_detail', job_id=job.id) }}">{{ job.title or job.url }}</a></td>
     <td>{{ job.company or '—' }}</td>
